@@ -1,0 +1,35 @@
+/** -------добавляю для push---------------------------------------------------------------- **/
+
+//TODO api
+1.Делаю запрос на сервер в интерфейсе  interface ApiService в API
+ @POST("users/push-tokens")
+    suspend fun sandPushToken(@Body pushToken: PushToken): Response<Unit>
+
+Беру эти данные с сервера package ru.netology.nmedia.controller ->UserController
+- @PostMapping("/push-tokens")
+    fun saveToken(@RequestBody pushToken: PushToken) = service.saveToken(pushToken)
+
+//TODO dto
+1.Делаю data class PushToken для преобразования в JSON. Это обертка для сервра. Сервер принимает данные только
+ в формате JSON. Данные совмещу с авторизацией и передам через interceptor
+
+ //TODO class auth
+ 1. Делаю функцию для получения токена fun sendPushToken(token: String? = null)
+
+ //TODO FSM service
+ 1. елаю функцию для получения токена override fun onNewToken(token: String)
+
+//TODO разное
+1.Добавлю библиотеку implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:$coroutines_version"
+def coroutines_version = "1.6.4". Эта библиотека нужа, что бы предоставить данные из task в корутины
+2.
+
+4.
+
+
+вам нужно будет в каталог сервера положить два файла:
+1.	constants.kt, в котором будет:
+package ru.netology.nmedia
+const val dbUrl = "https://FILL-ME.firebaseio.com"
+2.	файл fcm.json, в котором «закрытый ключ» для Firebase Admin SDK.
+Кроме того, не забудьте про google-services.json, который должен быть в каталоге вашего Android проекта.
