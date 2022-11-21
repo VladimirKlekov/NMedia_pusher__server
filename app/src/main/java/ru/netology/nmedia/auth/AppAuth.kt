@@ -1,9 +1,7 @@
 package ru.netology.nmedia.auth
 
 import android.content.Context
-import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.messaging.ktx.messaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,10 +9,28 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import ru.netology.nmedia.api.Api
+import ru.netology.nmedia.di.DependencyContainer
 import ru.netology.nmedia.dto.PushToken
 
-class AppAuth private constructor(context: Context) {
+
+/** --------класс контейнер для зависимостей-----------------------------------------------------**/
+/** 1.После изменения в ApiService необходимо изменить зависимости в функция на класс-контейнер class DependencyContainer
+-  в  fun sendPushToken( меняю Api.service.sendPushToken(pushToken) на DependencyContainer.getInstance().apiService.sendPushToken(pushToken),
+но!!! getInstance() не сработает. что бы зарабатола нодо чтобы class DependencyContainer "ожил" в
+рамках всего преокта. Для этого сделаю синглтоном (Класс Singleton - это класс, который определяется
+таким образом, что только один экземпляр класса может быть создан и использован везде.) Для этого нажму
+на getInstance()  и выберу Create member function 'DependencyContainer.Companion.getInstance'. Далее
+внесу изменения в class DependencyContainer->7->....
+2.После изменений в class DependencyContainer нужно добавить context в конструктор getInstance().
+Есть два варианта: 1) Добавить везде context. 2) Сделать специальную функциюв class DependencyContainer, которая один раз инициализирует
+class DependencyContainer и context нигде добавлять не придется. Делаю по второму варианту. Возварщаюсь в
+в class DependencyContainer->8->....
+3. Убиарю context в конструкторе. Было: class AppAuth private constructor(context: Context).
+Стало:class AppAuth (context: Context). -> class DependencyContainer 3->....
+ **/
+/** ---------------------------------------------------------------------------------------------**/
+
+class AppAuth(context: Context) {
     private val prefs = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
     private val idKey = "id"
     private val tokenKey = "token"
@@ -66,29 +82,31 @@ class AppAuth private constructor(context: Context) {
             try {
                 val pushToken = PushToken(token ?: FirebaseMessaging.getInstance().token.await())
                 //val pushToken = PushToken(token ?: Firebase.messaging.token.await())
-                Api.service.sendPushToken(pushToken)
+                DependencyContainer.getInstance().apiService.sendPushToken(pushToken)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    companion object {
-        @Volatile
-        private var instance: AppAuth? = null
 
-        fun getInstance(): AppAuth = synchronized(this) {
-            instance ?: throw IllegalStateException(
-                "AppAuth is not initialized, you must call AppAuth.initializeApp(Context context) first."
-            )
-        }
-
-        fun initApp(context: Context): AppAuth = instance ?: synchronized(this) {
-            instance ?: buildAuth(context).also { instance = it }
-        }
-
-        private fun buildAuth(context: Context): AppAuth = AppAuth(context)
-    }
 }
 
 data class AuthState(val id: Long = 0, val token: String? = null)
+
+//companion object {
+//        @Volatile
+//        private var instance: AppAuth? = null
+//
+//        fun getInstance(): AppAuth = synchronized(this) {
+//            instance ?: throw IllegalStateException(
+//                "AppAuth is not initialized, you must call AppAuth.initializeApp(Context context) first."
+//            )
+//        }
+//
+//        fun initApp(context: Context): AppAuth = instance ?: synchronized(this) {
+//            instance ?: buildAuth(context).also { instance = it }
+//        }
+//
+//        private fun buildAuth(context: Context): AppAuth = AppAuth(context)
+//    }

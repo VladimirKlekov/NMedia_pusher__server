@@ -15,6 +15,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import ru.netology.nmedia.R
 import ru.netology.nmedia.activity.NewPostFragment.Companion.textArg
 import ru.netology.nmedia.auth.AppAuth
+import ru.netology.nmedia.di.DependencyContainer
 import ru.netology.nmedia.viewmodel.AuthViewModel
 
 class AppActivity : AppCompatActivity(R.layout.activity_app) {
@@ -84,17 +85,18 @@ class AppActivity : AppCompatActivity(R.layout.activity_app) {
         return when (item.itemId) {
             R.id.signin -> {
                 // TODO: just hardcode it, implementation must be in homework
-                AppAuth.getInstance().setAuth(5, "x-token")
+               // AppAuth.getInstance().setAuth(5, "x-token")
+                DependencyContainer.getInstance().appAuth.setAuth(5, "x-token")
                 true
             }
             R.id.signup -> {
                 // TODO: just hardcode it, implementation must be in homework
-                AppAuth.getInstance().setAuth(5, "x-token")
+                DependencyContainer.getInstance().appAuth.setAuth(5, "x-token")
                 true
             }
             R.id.signout -> {
                 // TODO: just hardcode it, implementation must be in homework
-                AppAuth.getInstance().removeAuth()
+                DependencyContainer.getInstance().appAuth.removeAuth()
                 true
             }
             else -> super.onOptionsItemSelected(item)
