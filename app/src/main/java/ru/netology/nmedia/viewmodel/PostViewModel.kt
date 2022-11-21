@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.netology.nmedia.auth.AppAuth
 import ru.netology.nmedia.db.AppDb
+import ru.netology.nmedia.di.DependencyContainer
 import ru.netology.nmedia.dto.MediaUpload
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.model.FeedModel
@@ -36,9 +37,10 @@ private val noPhoto = PhotoModel()
 class PostViewModel(application: Application) : AndroidViewModel(application) {
     // упрощённый вариант
     private val repository: PostRepository =
-        PostRepositoryImpl(AppDb.getInstance(context = application).postDao())
+        PostRepositoryImpl( DependencyContainer.getInstance().appBd.postDao(), DependencyContainer.getInstance().apiService)
+//        PostRepositoryImpl(AppDb.getInstance(context = application).postDao())
 
-    val data: LiveData<FeedModel> = AppAuth.getInstance()
+    val data: LiveData<FeedModel> = DependencyContainer.getInstance().appAuth
         .authStateFlow
         .flatMapLatest { (myId, _) ->
             repository.data

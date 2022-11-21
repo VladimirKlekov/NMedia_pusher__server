@@ -13,32 +13,16 @@ import ru.netology.nmedia.dto.Media
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.dto.PushToken
 
-private const val BASE_URL = "${BuildConfig.BASE_URL}/api/slow/"
-
-private val logging = HttpLoggingInterceptor().apply {
-    if (BuildConfig.DEBUG) {
-        level = HttpLoggingInterceptor.Level.BODY
-    }
+/** --------класс контейнер для зависимостей-----------------------------------------------------**/
+/** 1. После внесения изменений в конструктор в PostRepositoryImpl удаляю object Api {
+val service: ApiService by lazy {
+retrofit.create(ApiService::class.java)
 }
-
-private val okhttp = OkHttpClient.Builder()
-    .addInterceptor(logging)
-    .addInterceptor { chain ->
-        AppAuth.getInstance().authStateFlow.value.token?.let { token ->
-            val newRequest = chain.request().newBuilder()
-                .addHeader("Authorization", token)
-                .build()
-            return@addInterceptor chain.proceed(newRequest)
-        }
-        chain.proceed(chain.request())
-    }
-    .build()
-
-private val retrofit = Retrofit.Builder()
-    .addConverterFactory(GsonConverterFactory.create())
-    .baseUrl(BASE_URL)
-    .client(okhttp)
-    .build()
+}
+ ->возвращаюсь в PostRepositoryImpl для проверки ошибок
+ 2. Переношу обхекты BASE_URL, private val logging, private val okhttp, private val retrofit в class DependencyContainer ->...
+ **/
+/** ---------------------------------------------------------------------------------------------**/
 
 interface ApiService {
 
@@ -72,8 +56,3 @@ interface ApiService {
     suspend fun upload(@Part media: MultipartBody.Part): Response<Media>
 }
 
-object Api {
-    val service: ApiService by lazy {
-        retrofit.create(ApiService::class.java)
-    }
-}

@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.*
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import ru.netology.nmedia.api.*
-import ru.netology.nmedia.auth.AppAuth
 import ru.netology.nmedia.dao.PostDao
 import ru.netology.nmedia.dto.*
 import ru.netology.nmedia.entity.PostEntity
@@ -20,14 +19,31 @@ import ru.netology.nmedia.error.NetworkError
 import ru.netology.nmedia.error.UnknownError
 import java.io.IOException
 
-class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
+/** --------класс контейнер для зависимостей-----------------------------------------------------**/
+/** 1. внедряю зависимости
+- Было: class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
+- вношу в конструктор зависимость сервиса Api -> class PostRepositoryImpl(
+private val dao: PostDao,
+private val apiService:ApiService
+) : PostRepository { и теперь в функциях могу обращаться к нему напрмяую apiService. .....;
+ - что бы не совершить ошибку с названиями по ApiService вносим в него изменения ->....
+ - после изменений в ApiService проверяю ошибки. если нет, то иду в class DependencyContainer;
+
+ **/
+/** ---------------------------------------------------------------------------------------------**/
+
+
+class PostRepositoryImpl(
+    private val dao: PostDao,
+    private val apiService: ApiService
+) : PostRepository {
     override val data = dao.getAll()
         .map(List<PostEntity>::toDto)
         .flowOn(Dispatchers.Default)
 
     override suspend fun getAll() {
         try {
-            val response = Api.service.getAll()
+            val response = apiService.getAll()
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.message())
             }
@@ -44,7 +60,7 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
     override fun getNewerCount(id: Long): Flow<Int> = flow {
         while (true) {
             delay(120_000L)
-            val response = Api.service.getNewer(id)
+            val response = apiService.getNewer(id)
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.message())
             }
@@ -59,7 +75,7 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
 
     override suspend fun save(post: Post) {
         try {
-            val response = Api.service.save(post)
+            val response = apiService.save(post)
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.message())
             }
@@ -85,7 +101,8 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
         try {
             val media = upload(upload)
             // TODO: add support for other types
-            val postWithAttachment = post.copy(attachment = Attachment(media.id, AttachmentType.IMAGE))
+            val postWithAttachment =
+                post.copy(attachment = Attachment(media.id, AttachmentType.IMAGE))
             save(postWithAttachment)
         } catch (e: AppError) {
             throw e
@@ -102,7 +119,7 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
                 "file", upload.file.name, upload.file.asRequestBody()
             )
 
-            val response = Api.service.upload(media)
+            val response = apiService.upload(media)
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.message())
             }
@@ -114,20 +131,5 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
             throw UnknownError
         }
     }
-//    /** -------добавляю для auth---------------------------------------------------------------- **/
-//    override suspend fun login(login: String, password: String) {
-//        try {
-//            val response = PostsApi.service.updateUser(login, password)
-//            if (!response.isSuccessful) {
-//                throw ApiError(response.code(), response.message())
-//            }
-//            val body = response.body() ?: throw ApiError(response.code(), response.message())
-//            body.token?.let { AppAuth.getInstance().saveAuth(id = body.id, token = it) }
-//        } catch (e: IOException) {
-//            throw NetworkError
-//        } catch (e: Exception) {
-//            throw UnknownError
-//        }
-//    }
 
 }
