@@ -1,0 +1,119 @@
+/*************************** HILT *****************************************************************/
+ТЕРМИНЫ:
+*
+Внедрение зависимостей (DI) — это метод, широко используемый в программировании и хорошо подходящий
+для Android-разработки. При нем зависимости предоставляются классу, а не создаются самостоятельно.
+*
+Библиотека Hilt определяет стандартный способ выполнения DI в приложении, предоставляя контейнеры
+для каждого класса Android-проекта и автоматически управляя их жизненными циклами за вас. Проще -
+библиотека Hilt сама "собирает" зависимости
+
+
+
+ЧТО НУЖНО, ЧТО БЫ ПРИМЕНИТЬ Hilt:
+Установить библиотеку:
+
+-> BUILD.GRADLE (проекта)
+        buildscript {
+        ext.kotlin_version =	1.4.32”
+—---->  ext.hilt_version = "2.42"
+
+        repositories dependencies {
+        classpath 1 com.android.tools.build:gradle:4.1.3'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" classpath 1 com. google. gins: google-services: 4.3.5'
+------> classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
+}
+
+-> BUILD.GRADLE (app)
+
+        apply plugin: 'com.android.application'
+        apply plugin: 'kotlin-android'
+        apply plugin: ’kotlin-kapt'
+        apply plugin: 'com.google.gms.google-services'
+------> apply plugin: 'dagger.hilt.android.plugin'
+
+------> implementation "com.google.dagger:hilt-android:$hilt_version (доступ к калссам...)
+------> kapt "com.google.dagger:hilt-compiler:$hilt_version"(анализ написанного кода, что бы сгенерировать новый код)
+
+КАК ПРИМЕНЯТЬ Hilt:
+1.Буду менять все зависимости, написанные руками на использование Hilt;
+2.Что бы использовать Hilt нужно для каждого класса создать модуль (module)
+
+************************* Модули для данных  *****************************************************
+/** --Hilt- для базы данных и PostDao-**/
+/**
+1.Делаю class DbModule для зависемостей к abstract class AppDb (база данных);
+2.Помечаю анотацией @Module (import dagger.Module);
+3. Необходимо указать на каком уровне будет использоваться эта зависимость
+( уровни: или приложение или активити или вьюмодель). База данных имеет глобальный уровень. Поэтому
+применяю анотацию для уровня всего приложения @InstallIn (import dagger.hilt.InstallIn);
+4. Так как клас в единственном экземпляре, то я должен добавить к зависимости @InstallIn(SingletonComponent::class)
+(import dagger.hilt.components.SingletonComponent);
+5.Для создания зависимостей библиотека ВфппукРшде использует функции, которые необходимо помечать анотациями
+и если я хочу создать вручную экземпляр какого-то объекта, то необходимо поставить анотацию  @Provides;
+6.СОздаю функцию fun provideDb():AppDb = Room.databaseBuilder(context, AppDb::class.java, "app.db").fallbackToDestructiveMigration().build()
+и конструируе базу данных;
+7. В функцию добавляю констекст context: Context для доступа к глобальому контексту с анотацией @ApplicationContext
+(слева появилась иконка стрелка с "лопатой". Это значит, что данный контекст нам кто-то уже предоставил.
+8.Делаю функцию для postDao fun providePostDao. Данные в нее беру из базы данных;
+9. Если я хочу, что бы объект был создат только один раз в приложении, я помечаю его анотацией @Singleton
+ **/
+
+ /** --Hilt- для сервиса Api**/
+ /**
+ 1. Для создания сервиса APi потребуется:
+ - клиент OkHttpClient +retrofit
+ - логирование HttpLoggingInterceptor()
+ - ссылка на сервер BASE_URL = "${BuildConfig.BASE_URL}/api/slow/"
+ 2. В функции fun providerOkHttpClient есть параментр  appAuth: AppAuth. Но библиотека DaggerHilt не
+ знает его. Надо "научить" ее его созданию. Для это идем в class AppAuth(context: Context) и добавляем
+ анотацию @Inject constructor. В итоге получается class AppAuth @Inject constructor(context: Context) {
+ и указываем, что данный объект нужет только в одном экзепляре    @Singleton. Теперь библиотека умеет
+ создавать объекты типа AppAuth;
+ 3.Далее нужно создать объект типа ApiService. Для этого нужен объект типа retrofit. Создадим его
+ в функции fun providerRetrofit(. Далее создаю объект ApiService. Создаим его в функции fun providerApiService;
+ 4.Далее проверяю, что все задействованные тут классы-функции создаюются как классы одиночки и
+ помечены анотацией @Singleton
+  **/
+
+  /** --Hilt- для репозитория**/
+  /**
+  1. В отличие от других модулей репозиторий сделаем для эксперемента не классом, а интерфейсом;
+  2. В class PostRepositoryImp есть две зависимости. Сам class PostRepositoryImp и его зависимость - интерфейс
+  PostRepository. Необходимо научить DaggerHilt создавать объект типа PostRepository так, что бы его реализация
+  была именно как PostRepositoryImp. Учим DaggerHilt создавать объекты данного класса использую @Inject constructor
+  Было: class PostRepositoryImpl (
+  private val dao: PostDao,
+  private val apiService: ApiService
+  ) : PostRepository {
+  Стало: class PostRepositoryImpl @Inject constructor (....
+  3. Далее интерфейс и реализаую можно связать тут с помощью анотации @Binds и функции fun bindsPostRepository.
+  В качестве аргумента в функцию передам реализацию PostRepositoryImpl, а возвр значени будет интерфейс PostRepository
+   **/
+
+   ********************************* Удаление *****************************************************
+1.Удаляю class DependencyContainer. Теперь этот контейнер не нужен, т.к. работают модули;
+2.Удаляю интерфейс ViewModelProvider.Factory, т.к. не нужно получать значения через "фабрику" -
+class DependencyContainer;
+
+   ********************************* ViewModel *****************************************************
+1. Библеотека DaggerHilt настолько умна, что умеет создавать ViewModel. Для этого необходимо пометить
+вьмодели @Inject constructor
+2.Нужно пометить специально анотацией @HiltViewModel
+
+   ********************************* activity and fragment *****************************************
+ 1,Нужно удалить весь лишний код из активити и фрагмента
+ /** в активити и фрагментах
+  1.Что бы получить зависимости из модулей, который описал надо активи пометить анотацией @AndroidEntryPoint;
+  2.Передаю все необходимые классы в свойство активити пометив их анотацией @Inject:
+  @Inject
+ В итоге получается
+  @AndroidEntryPoint
+  class AppActivity : AppCompatActivity(R.layout.activity_app) {
+  @Inject
+  lateinit var appAuth: AppAuth
+  */
+
+
+
+

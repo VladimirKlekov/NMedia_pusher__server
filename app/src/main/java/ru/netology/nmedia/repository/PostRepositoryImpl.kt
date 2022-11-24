@@ -18,22 +18,10 @@ import ru.netology.nmedia.error.AppError
 import ru.netology.nmedia.error.NetworkError
 import ru.netology.nmedia.error.UnknownError
 import java.io.IOException
-
-/** --------класс контейнер для зависимостей-----------------------------------------------------**/
-/** 1. внедряю зависимости
-- Было: class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
-- вношу в конструктор зависимость сервиса Api -> class PostRepositoryImpl(
-private val dao: PostDao,
-private val apiService:ApiService
-) : PostRepository { и теперь в функциях могу обращаться к нему напрмяую apiService. .....;
- - что бы не совершить ошибку с названиями по ApiService вносим в него изменения ->....
- - после изменений в ApiService проверяю ошибки. если нет, то иду в class DependencyContainer;
-
- **/
-/** ---------------------------------------------------------------------------------------------**/
+import javax.inject.Inject
 
 
-class PostRepositoryImpl(
+class PostRepositoryImpl @Inject constructor (
     private val dao: PostDao,
     private val apiService: ApiService
 ) : PostRepository {

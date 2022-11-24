@@ -9,16 +9,21 @@ import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 import ru.netology.nmedia.R
 import ru.netology.nmedia.auth.AppAuth
-import ru.netology.nmedia.di.DependencyContainer
+import javax.inject.Inject
 import kotlin.random.Random
 
+@AndroidEntryPoint
 class FCMService : FirebaseMessagingService() {
     private val content = "content"
     private val channelId = "remote"
     private val gson = Gson()
     private val action = "action"
+
+    @Inject
+    lateinit var appAuth: AppAuth
 
     override fun onCreate() {
         super.onCreate()
@@ -35,7 +40,7 @@ class FCMService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
-        val checkRecipientId =  DependencyContainer.getInstance().appAuth.authStateFlow.value.id
+        val checkRecipientId =  appAuth.authStateFlow.value.id
         val putPushMessage = gson.fromJson(message.data[content], PushMessage::class.java)
 
         //recipientId = тому, что в AppAuth, то всё ok, показываете Notification;
@@ -50,18 +55,18 @@ class FCMService : FirebaseMessagingService() {
         // аутентификация и вам нужно переотправить свой push token
         {
             errorAuthorization(putPushMessage)
-            DependencyContainer.getInstance().appAuth.sendPushToken()
+            appAuth.sendPushToken()
         } else if (putPushMessage.recipientId != 0L && putPushMessage.recipientId != checkRecipientId)
         //если recipientId != 0 (и не равен вашему), значит сервер считает, что на вашем
         // устройстве другая аутентификация и вам нужно переотправить свой push token;
             incorrectAuthorization(putPushMessage)
-        DependencyContainer.getInstance().appAuth.sendPushToken()
+        appAuth.sendPushToken()
     }
 
 
     /** -----------------------------------------------------------------------------------------**/
     override fun onNewToken(token: String) {
-        DependencyContainer.getInstance().appAuth.sendPushToken(token)
+        appAuth.sendPushToken(token)
     }
 
 

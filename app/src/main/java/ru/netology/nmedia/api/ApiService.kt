@@ -13,15 +13,8 @@ import ru.netology.nmedia.dto.Media
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.dto.PushToken
 
-/** --------класс контейнер для зависимостей-----------------------------------------------------**/
-/** 1. После внесения изменений в конструктор в PostRepositoryImpl удаляю object Api {
-val service: ApiService by lazy {
-retrofit.create(ApiService::class.java)
-}
-}
- ->возвращаюсь в PostRepositoryImpl для проверки ошибок
- 2. Переношу обхекты BASE_URL, private val logging, private val okhttp, private val retrofit в class DependencyContainer ->...
- **/
+/** --------HILT-----------------------------------------------------**/
+/** */
 /** ---------------------------------------------------------------------------------------------**/
 
 interface ApiService {
