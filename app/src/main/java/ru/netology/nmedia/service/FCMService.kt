@@ -11,6 +11,7 @@ import com.google.firebase.messaging.RemoteMessage
 import com.google.gson.Gson
 import ru.netology.nmedia.R
 import ru.netology.nmedia.auth.AppAuth
+import ru.netology.nmedia.di.DependencyContainer
 import kotlin.random.Random
 
 class FCMService : FirebaseMessagingService() {
@@ -34,7 +35,7 @@ class FCMService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
-        val checkRecipientId = AppAuth.getInstance().authStateFlow.value.id
+        val checkRecipientId =  DependencyContainer.getInstance().appAuth.authStateFlow.value.id
         val putPushMessage = gson.fromJson(message.data[content], PushMessage::class.java)
 
         //recipientId = тому, что в AppAuth, то всё ok, показываете Notification;
@@ -49,18 +50,18 @@ class FCMService : FirebaseMessagingService() {
         // аутентификация и вам нужно переотправить свой push token
         {
             errorAuthorization(putPushMessage)
-            AppAuth.getInstance().sendPushToken()
+            DependencyContainer.getInstance().appAuth.sendPushToken()
         } else if (putPushMessage.recipientId != 0L && putPushMessage.recipientId != checkRecipientId)
         //если recipientId != 0 (и не равен вашему), значит сервер считает, что на вашем
         // устройстве другая аутентификация и вам нужно переотправить свой push token;
             incorrectAuthorization(putPushMessage)
-        AppAuth.getInstance().sendPushToken()
+        DependencyContainer.getInstance().appAuth.sendPushToken()
     }
 
 
     /** -----------------------------------------------------------------------------------------**/
     override fun onNewToken(token: String) {
-        AppAuth.getInstance().sendPushToken(token)
+        DependencyContainer.getInstance().appAuth.sendPushToken(token)
     }
 
 
