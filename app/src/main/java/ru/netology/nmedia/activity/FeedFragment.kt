@@ -7,9 +7,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.paging.LoadState
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import ru.netology.nmedia.R
 import ru.netology.nmedia.adapter.OnInteractionListener
 import ru.netology.nmedia.adapter.PostsAdapter
@@ -17,8 +22,15 @@ import ru.netology.nmedia.databinding.FragmentFeedBinding
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.viewmodel.PostViewModel
 
+@AndroidEntryPoint
 class FeedFragment : Fragment() {
-    private val viewModel: PostViewModel by viewModels(ownerProducer = ::requireParentFragment)
+
+    private val viewModel: PostViewModel by activityViewModels()
+
+//    private val viewModel: PostViewModel by viewModels(
+//        ownerProducer = ::requireParentFragment,
+//
+//    )
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -62,18 +74,44 @@ class FeedFragment : Fragment() {
                     .show()
             }
         }
-        viewModel.data.observe(viewLifecycleOwner) { state ->
-            adapter.submitList(state.posts)
-            binding.emptyText.isVisible = state.empty
-        }
-        viewModel.newerCount.observe(viewLifecycleOwner) { state ->
-            // TODO: just log it, interaction must be in homework
-            println(state)
+        lifecycleScope.launchWhenCreated {
+            viewModel.data.collectLatest {
+                adapter.submitData(it)
+            }
         }
 
-        binding.swiperefresh.setOnRefreshListener {
-            viewModel.refreshPosts()
+        lifecycleScope.launchWhenCreated {
+            viewModel.data.collectLatest {
+                adapter.loadStateFlow.collectLatest {
+                   binding.swiperefresh.isRefreshing =  it.refresh is LoadState.Loading
+                            || it.append is LoadState.Loading
+                            || it.prepend is LoadState.Loading
+                }
+            }
         }
+
+        lifecycleScope.launchWhenCreated {
+            viewModel.data.collectLatest {
+                adapter.loadStateFlow.collectLatest {
+
+                    binding.swiperefresh.isRefreshing =  it.refresh is LoadState.Loading
+                            || it.append is LoadState.Loading
+                            || it.prepend is LoadState.Loading
+                }
+            }
+        }
+
+//        viewModel.newerCount.observe(viewLifecycleOwner) { state ->
+//            // TODO: just log it, interaction must be in homework
+//            println(state)
+//        }
+
+        binding.swiperefresh.setOnRefreshListener {
+            //обновляю данные и получаю данные из адаптера
+            adapter.refresh()
+            //viewModel.refreshPosts()
+        }
+
 
         binding.fab.setOnClickListener {
             findNavController().navigate(R.id.action_feedFragment_to_newPostFragment)
