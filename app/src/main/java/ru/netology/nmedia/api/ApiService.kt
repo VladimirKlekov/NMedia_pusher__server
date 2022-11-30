@@ -13,13 +13,29 @@ import ru.netology.nmedia.dto.Media
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.dto.PushToken
 
-/** --------HILT-----------------------------------------------------**/
-/** */
-/** ---------------------------------------------------------------------------------------------**/
+/** --------------------------------PAGING 3-----------------------------------------------------**/
+/**
+1.В данном интерфейсе уже есть функции для получения сообщений с сервера. Теперь применю пагинацию
+и буду запрашивать столько страниц, сколько нужно;
+ 2.Создам нужные функции:
+ - метод для начальной загрузки данных. Он возьмет последню страницу с сервера
+@GET("posts/latest")
+suspend fun getLatest(): Response<List<Post>>
+- метод для получения постов, которые пришли уже после полученных...
+ * */
+
 
 interface ApiService {
+    /** --------------------------------PAGING 3-------------------------------------------------**/
+    @GET("posts/latest")
+    suspend fun getLatest(@Query("count") count :Int): Response<List<Post>>
 
+    @GET("posts/{id}/before")
+    suspend fun getBefore(@Path("id") id: Long, @Query("count") count :Int): Response<List<Post>>
 
+    @GET("posts/{id}/after")
+    suspend fun getAfter(@Path("id") id: Long, @Query("count") count :Int): Response<List<Post>>
+    /** --------------------------------PAGING 3-------------------------------------------------**/
     @POST("users/push-tokens")
     suspend fun sendPushToken(@Body pushToken: PushToken): Response<Unit>
 
